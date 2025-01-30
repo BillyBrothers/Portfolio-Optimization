@@ -1,7 +1,5 @@
 # Nasdaq_100
 
-# Portfolio-Optimization App
-
 ##  Motivation
 Like most people, I like money. The majority of us sell our time in exchange for cash. It's good but not great. Selling your labor requires time and energy -- and we have limited supplies of that, unfortunately. But fortunately, 
 there are other avenues we can take like investing. Our money grows while we do...nothing? Sounds great! But for most people, investing is confusing. Everyone knows Real estate is great, but it's an extravagant expenditure -- a lot of time and energy just to acquire it. Other more affordable opportunities lie in the stock market -- much more affordable -- but still confusing. We've all heard the trope, **Don't put all your eggs in one basket**. So, we know we need to buy a lot of different kinds of stock. We call that *diversifying*. The other trope: **risk versus reward -- higher the risk higher the reward.** Sounds dandy but risk is scary -- we want to minimize it; Reward is sexy -- we need to maximize it. In finance speak risk is *volatility* or how much the price fluctuates relative to a benchmark like the entire market; and reward is *expected return* or how much your stock price grows. So, now you're at a crossroads. You know you need a basket of unique stock, you want the minimal amount of risk with the maximal amount of reward relative to that risk. You could pay a broker or take a class but that's too much of your time and energy. Where do you even start?
