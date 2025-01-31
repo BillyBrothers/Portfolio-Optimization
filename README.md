@@ -2,26 +2,19 @@
 
 ##  Motivation
 Like most people, I like money. The majority of us sell our time in exchange for cash. It's good but not great. Selling your labor requires time and energy -- and we have limited supplies of that, unfortunately. But fortunately, 
-there are other avenues we can take like investing. Our money grows while we do...nothing? Sounds great! But for most people, investing is confusing. Everyone knows Real estate is great, but it's an extravagant expenditure -- a lot of time and energy just to acquire it. Other more affordable opportunities lie in the stock market -- much more affordable -- but still confusing. We've all heard the trope, **Don't put all your eggs in one basket**. So, we know we need to buy a lot of different kinds of stock. We call that *diversifying*. The other trope: **risk versus reward -- higher the risk higher the reward.** Sounds dandy but risk is scary -- we want to minimize it; Reward is sexy -- we need to maximize it. In finance speak risk is *volatility* or how much the price fluctuates relative to a benchmark like the entire market; and reward is *expected return* or how much your stock price grows. So, now you're at a crossroads. You know you need a basket of unique stock, you want the minimal amount of risk with the maximal amount of reward relative to that risk. You could pay a broker or take a class but that's too much of your time and energy. Where do you even start?
+there are other avenues we can take like investing. Our money grows while we do...nothing? Sounds great! But for most people, investing is confusing. Everyone knows Real estate is great, but it's an extravagant expenditure -- a lot of time and energy just to acquire it. Other more affordable opportunities lie in the stock market -- much more affordable -- but still confusing. We've all heard the trope, **Don't put all your eggs in one basket**. So, we know we need to buy a lot of different kinds of stock. We call that *diversifying*. The other trope: **risk versus reward -- higher the risk higher the reward.** Sounds dandy but risk is scary -- we want to minimize it; Reward is sexy -- we need to maximize it. In finance speak risk is *volatility* or how much the price fluctuates relative to a benchmark like the entire market; and reward is *expected return* or how much you can expect to return based on historical performance. So, now you're at a crossroads. You know you need a basket of unique stock, you want the minimal amount of risk with the maximal amount of reward relative to that risk. You could pay a broker or take a class but that's too much of your time and energy. Where do you even start?
 
 ## Purpose
-The purpose of my project is to develop an app that allows users to input any quantity of stocks, whether they're all relative to a single sector or not, and receive a fundamental, investigative analysis on those stocks using their historical data via an Yahoo Finance API. The app would display pertinent information for the investor.  
+The purpose of my project is to develop an app that allows users to input any quantity of stocks and display an optimal portfolio. The user will be able to adjust certain settings to interact with the data to answer pertinent investment questions about their stocks.
 
 ## Analysis and Output
-The user will have the answers to the most pertinent information for an investor building a stock portfolio:
-
+In addition to the optimized portfolio the user will be able to answer these questions:
 
 1) What are the historical returns of the assets in the financial dataset?
-   1) Import financial dataset (entire tech sector)
-   2) look at in comparsion to s&p 500
-   3) look at in comparsion to major economic indicators 
 
+2) What are the volatilites for the assets in the financial dataset?
 
-   start with serverside logic, then userinteractive what can we see, and how can the user interact with it? 
-
-3) What are the volatilites for the assets in the financial dataset?
-
-4) What are the expected returns for assets in the financial dataset?
+3) What are the expected returns for assets in the financial dataset?
   * serverside logic:
     1) import Use the U.S. Treasury Bill rate with maturity 1 year or less (risk free rate benchmark (it is the most risk free finanical asset known))
     2) import stock data
@@ -34,7 +27,7 @@ The user will have the answers to the most pertinent information for an investor
        * E(Rm) is the expected return of the market portfolio
        * (E(Rm) - Rf) is the market risk premium
        Formula: $$E(R_i) = R_f + \beta_i (E(R_m) - R_f)$$
-  * user interactive
+  * user interactive (all possibilities):
     1) Stock Symbol Input: Allow users to enter the stock symbols they are interested in (or all if they're interested in everything).
     2) Risk-Free Rate Input: Enable users to input the risk-free rate they wish to use in their calculations (have the standard as an option).
     3) Market Return Input: Let users enter the expected return of the market portfolio.
@@ -44,7 +37,7 @@ The user will have the answers to the most pertinent information for an investor
     7) Scatter Plot of Beta vs. Expected Return: A scatter plot can show the relationship between beta and expected return for the tech stocks. This visualization helps users understand how market risk (beta) is related to the expected return.
     8) Table of Expected Returns and Betas:
     9) A data table can display the expected returns alongside their corresponding betas and other key metrics. This provides users with a detailed view of the data.
-
+   
 3) How are the assets correlated with each other?
   * serverside logic:
     1) Gather Data: already completed in the input phase
@@ -59,12 +52,13 @@ The user will have the answers to the most pertinent information for an investor
     2) Insight into diversification risk
     3) Provides overlap insight (if data is highly correlated you lose diversification benefit)
      
+4) What constraints should be applied?
+5) How frequently should the portfolio be rebalanced?
+6) What benchmarks should be used to evaluate the portfolio's performance?
+7) How will transaction costs impact the portfolio's performance?
 
-* What constraints should be applied?
-* How frequently should the portfolio be rebalanced?
+### Ideas to consider for user input
 * What is the investor's risk tolerance and investment horizon?
-* What benchmarks should be used to evaluate the portfolio's performance?
-* How will transaction costs impact the portfolio's performance?
 * What optimization method will be used?
 
 ## Features
@@ -81,43 +75,6 @@ The following packages were used:
 8) library(zoo)
 9) library(tidyquant)
 
-
-1. Interactive Line Charts
-Time Series Analysis: Display interactive line charts for historical price data, showing trends over time.
-
-Moving Averages: Add moving averages (e.g., 50-day, 200-day) to identify trends and potential buy/sell signals.
-
-2. Performance Metrics
-Returns: Calculate and display simple returns, CAGR, and annualized returns.
-
-Volatility: Show measures of volatility, such as standard deviation and beta.
-
-3. Sector Analysis
-Sector Performance: Break down the index by sectors (e.g., technology, healthcare) and compare their performance.
-
-Top/Bottom Performers: Highlight the top and bottom performing stocks within the index.
-
-4. Fundamental Analysis
-Earnings Per Share (EPS): Display EPS data for individual stocks.
-
-Price-to-Earnings (P/E) Ratio: Compare P/E ratios to assess valuation.
-
-Dividend Yield: Show dividend yield for income-focused analysis.
-
-5. Technical Analysis
-Relative Strength Index (RSI): Plot RSI to identify overbought or oversold conditions.
-
-Bollinger Bands: Include Bollinger Bands to visualize price volatility and potential price movements.
-
-
-
-
-
-
-
-
-
-$${\color{red} Disregard everything below this line, please, for me :D} $$
 
 
 ## Optimal Weights for a nth-asset portfolio (Minimum Variance)
@@ -164,4 +121,38 @@ PortfolioAnalytics Package:
  * add constraints
  * add objective function
  * Optimize 
+
+
+
+
+
+
+leftover:
+1. Interactive Line Charts
+Time Series Analysis: Display interactive line charts for historical price data, showing trends over time.
+
+Moving Averages: Add moving averages (e.g., 50-day, 200-day) to identify trends and potential buy/sell signals.
+
+2. Performance Metrics
+Returns: Calculate and display simple returns, CAGR, and annualized returns.
+
+Volatility: Show measures of volatility, such as standard deviation and beta.
+
+3. Sector Analysis
+Sector Performance: Break down the index by sectors (e.g., technology, healthcare) and compare their performance.
+
+Top/Bottom Performers: Highlight the top and bottom performing stocks within the index.
+
+4. Fundamental Analysis
+Earnings Per Share (EPS): Display EPS data for individual stocks.
+
+Price-to-Earnings (P/E) Ratio: Compare P/E ratios to assess valuation.
+
+Dividend Yield: Show dividend yield for income-focused analysis.
+
+5. Technical Analysis
+Relative Strength Index (RSI): Plot RSI to identify overbought or oversold conditions.
+
+Bollinger Bands: Include Bollinger Bands to visualize price volatility and potential price movements.
+
 
