@@ -1,0 +1,22 @@
+
+
+```{r}
+library(tidyverse)
+library(quantmod)
+library(PerformanceAnalytics)
+library(PortfolioAnalytics)
+library(timetk)
+library(tibbletime)
+library(xts)
+library(zoo)
+library(tidyquant)
+```
+
+
+```{r}
+symbols <- c("AAPL", "PFE", "JPM", "XOM", "AMT", "KO", "TGT", "BA", "NEM", "EXC", "DIS")
+
+
+
+```
+

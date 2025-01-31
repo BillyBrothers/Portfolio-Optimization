@@ -1,0 +1,95 @@
+
+
+
+```{r}
+# install.packages("plotly")
+# install.packages("ggplot2")
+# install.packages("dplyr")
+# install.packages("car")
+# install.packages("babynames")
+# install.packages("gapminder")
+```
+
+
+
+```{r}
+# library(rvest)
+# library(quantmod)
+# library(PerformanceAnalytics)
+# library(PortfolioAnalytics)
+# library(timetk)
+# library(tibbletime)
+# library(xts)
+# library(zoo)
+library(plotly)
+library(dplyr)
+library(carData)
+library(gapminder)
+library(tidyverse)
+library(tidyquant)
+```
+
+*Acquiring the financial data for the nasdaq 100 index*
+
+```{r}
+Nasdaq_100_Ticker <- '^NDX'
+nasdaq_100_index <- tq_get(
+  Nasdaq_100_Ticker)
+head(nasdaq_100_index, n=3)
+```
+
+*Acquiring the components of the nasdaq 100 index. Scraping tables from wikipedia*
+
+```{r}
+url <- "https://en.wikipedia.org/wiki/NASDAQ-100"
+tables <- url |>
+  read_html() |> 
+  html_table(fill=TRUE)
+
+nasdaq_100_table <- tables[[5]]
+nasdaq_100_table
+```
+
+*Pulling the symbols as a vector*
+
+```{r}
+nasdaq_100_symbols <- nasdaq_100_table |>
+  pull(Symbol)
+```
+*Acquiring the components financial data.*
+
+```{r}
+nasdaq_100_components <- tq_get(nasdaq_100_symbols) |> 
+  rename(Symbol = symbol)
+```
+
+
+```{r}
+nasdaq_100_components <- full_join(nasdaq_100_components, nasdaq_100_table)
+nasdaq_100_components
+```
+
+*line graph of nasdaq_100 index for the past 10 years - adjusted close price*
+
+```{r}
+line <- nasdaq_100_index |> 
+  ggplot(aes(x = date, y = adjusted)) +
+  geom_line()
+ggplotly(line)
+```
+
+
+```{r}
+lines <- nasdaq_100_components |>
+  filter(`GICS Sector` == 'Information Technology') |> 
+  ggplot(aes(x=date, y=adjusted, colors=Company)) + 
+  geom_line()
+ggplotly(lines)
+```
+
+
+```{r}
+
+```
+
+
