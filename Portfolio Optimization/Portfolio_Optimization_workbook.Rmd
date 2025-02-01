@@ -13,10 +13,45 @@ library(tidyquant)
 ```
 
 
+*Import daily prices from yahoo finance*'
+*Data will be in the form of xts object, which is time series.*
+*We are not specifying a start or end date to ensure we get the maximum, free data we can*
+
 ```{r}
 symbols <- c("AAPL", "PFE", "JPM", "XOM", "AMT", "KO", "TGT", "BA", "NEM", "EXC", "DIS")
 
+#I'm using getSymbols from quantmod library because it returns a time series object in xts form. 
 
+price <- getSymbols(
+  Symbols = symbols,
+  src = 'yahoo',
+  auto.assign = TRUE,
+  warnings = FALSE
+) |> 
+  # get returns our financial price data (Open, High, Low, Close, Volume, Adjusted) from yahoo in xts form. Ad returns ONLY the daily adjusted price. Map returns each individual stock data into a list. 
+  map(.f = ~Ad(get(x = .))) |> 
+  #reduce applies a function to each element of the list? 
+  reduce(.f = merge) |> 
+  # I needed to set the ticker symbol to the name of the columns. I found this nifty way of doing it since colnames(x=prices) <- value didn't work and I don't know why. Apparently this is prefix form. (Ex. AAPL.Adjusted is now AAPL)
+  `colnames<-` (value=symbols)
 
+```
+
+```{r}
+# Keep only the last adjusted price of each month because we are focused on a long-term investment horizon, plus daily price flucuations cause too much noise and make it harder to identify long term trends. 
+
+# to.monthly() function is apart of xts library and is used to convert daily price data to monthly. All are explanatory expect OHLC set to close returns only closing prices. 
+
+stock_returns <- to.monthly(
+  x = prices,
+  drop.time = TRUE,
+  indexAt = 'lastof', 
+  OHLC = FALSE
+)
+
+```
+
+```{r}
+stock_returns
 ```
 
