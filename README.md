@@ -1,4 +1,4 @@
-# Nasdaq_100
+# Portfolio Optimization
 
 ##  Motivation
 Like most people, I like money. The majority of us sell our time in exchange for cash. It's good but not great. Selling your labor requires time and energy -- and we have limited supplies of that, unfortunately. But fortunately, 
