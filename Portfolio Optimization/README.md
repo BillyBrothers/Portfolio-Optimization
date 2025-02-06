@@ -156,6 +156,41 @@ PortfolioAnalytics Package:
   *  $${\color{red} glpk} $$: Used for linear programming (LP) and Mixed-integer Linear Programming problems.
   *  $${\color{red} quadprog} $$: used for quadratic progrmaming problems. 
 
+
+## Optimal Weights for the five-asset portfolio (Maximum Expected Return)
+
+We are going to find the maximum expected return portfolio:
+
+$$
+Maximize (\mu^2 = \vec{w}^\top \Sigma \vec{w})
+$$
+
+Weight constraint (total proportion of assets in portfolio must sum to 1. Ensures maximal invested portfolio; Standarzieds the portfolio for benchmark comparisons; ensures balanced allocation
+of assets for diversification benefit.):
+
+
+$$
+\sum_{i=1}^{n} w_i = 1
+$$
+
+Box Constraint(limits weights of each assets within specified range between 0 to 1. Minimum value constraint ensures each assets meaningful contribution to overall return.
+Maximum value constraint prevents anyone asset from dominating the portfolio, thus spreading out the risk and ensuring diversification. 
+
+$$
+0 \leq w_i \leq 1 \quad \text{for all } i
+$$
+
+Objective:
+* Create a portfolio with the maximal expected return. 
+
+Linear Programming Problem (LP):
+* Since we are maximizing a linear function subject to linear and objective constraints, we use a linear programming solver.
+* Expected return function is a linear function: $$E(R) = \sum_{i=1}^{n} w_i E(R_i)$$
+* Weight & Box constraints are linear equations.
+* $${\color{red} PortfolioAnalytics} $$: package implements $${\color{red} ROI.plugin.glpk} $$ to solve a linear programming problem.
+
+
+
 ### Algorithm 
  * Assets will be imported from Yahoo Finance. Financial data is most commonly formatted in Time Series.
  * Convert daily prices to monthly return
@@ -165,3 +200,7 @@ PortfolioAnalytics Package:
  * add objective function
  * Optimize 
 
+
+## Build Portfolio
+
+* Aggregate the monthly returns for the individual assets to find the monhtly returns 
