@@ -9,6 +9,7 @@
 # install.packages('highcharter')
 # install.packages('widgetframe')
 #install.packages("quadprog")
+install.packages("shinydashboard")
 library(Rglpk)
 library(ROI.plugin.glpk)
 library(ROI)
@@ -227,6 +228,7 @@ Minimum_Variance_Portfolio <- add.constraint(
 )
 Minimum_Variance_Portfolio
 ```
+
 ```{r}
 # Add Box Constraint(weights have minimum and maximum values - limits the range of weights in the portfolio. Limits over/under leveraging for assets. Promotes diversification)
 Minimum_Variance_Portfolio <- add.constraint(
@@ -237,6 +239,7 @@ Minimum_Variance_Portfolio <- add.constraint(
 )
 Minimum_Variance_Portfolio
 ```
+
 ```{r}
 # Add Objective to minimize risk (we are creating a minimization portfolio)
 Minimum_Variance_Portfolio <- add.objective(

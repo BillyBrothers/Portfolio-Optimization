@@ -1,33 +1,41 @@
-#
-# This is the user-interface definition of a Shiny web application. You can
-# run the application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
-#
-
-library(shiny)
-
-# Define UI for application that draws a histogram
-fluidPage(
-
-    # Application title
-    titlePanel("Old Faithful Geyser Data"),
-
-    # Sidebar with a slider input for number of bins
-    sidebarLayout(
-        sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
-        ),
-
-        # Show a plot of the generated distribution
-        mainPanel(
-            plotOutput("distPlot")
-        )
+ui <- dashboardPage(
+  dashboardHeader(title = 'Portfolio Optimization'),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Overview", tabName = 'overview', icon = icon("dashboard")),
+      menuItem('Configuration', tabName= 'configuration', icon = icon('chart-line'))
     )
+  ),
+  dashboardBody(
+    tabItems(
+      tabItem(tabName = 'overview',
+              fluidRow(
+                box(title = 'Introduction', width = 12, status = 'primary',
+                    p("Welcome to my Portfolio Optimization Dashboard. My app
+                      optimizes your portfolio based on a given list of assets using
+                      the Mean Variance optimization approach."),
+                    tags$ul(
+                      tags$li("Mean Variance - Constructs investment portfolio that offers
+                            best possible expected return for a given level of risk -- chosen
+                            from the efficient frontier.")
+                    )
+                ),
+                box(title = 'Data reliance', width = 12, status = 'primary',
+                    p("My app relies on historical data to perform optimization.
+                      You can choose your optimization objective and asset constraints.")
+                )
+              )
+      ),
+      
+      tabItem(tabName = 'configuration',
+              fluidRow(
+                box(title = 'Configuration', width = 12, status = 'primary',
+                    dateInput('start_date', 'Start Date:', value = start_date),
+                    dateInput('end_date', 'End Date:', value = end_date)
+                )
+              )
+        
+      )
+    )
+  )
 )
