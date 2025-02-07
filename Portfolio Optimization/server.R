@@ -1,43 +1,95 @@
-#
-# This is the server logic of a Shiny web application. You can run the
-# application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
-#
-
-
-
-# Define server logic required to draw a histogram
-
-
 server <- function(input, output) {
-  symbols <- "AAPL"  # You can modify this to include more symbols
-  getSymbols(Symbols = symbols, src = 'yahoo', auto.assign = TRUE, warnings = FALSE)
   
-  # Assuming you want to work with the first symbol returned
-  stock_data <- get(symbols[1])
+  symbols <- reactive({
+    sapply(1:10, function(i) input[[paste0('asset_', i)]])
+  })
   
-  # Extract the start and end dates
-  start_date <- index(stock_data)[1]
-  end_date <- index(stock_data)[length(index(stock_data))]
+  # Reactive data input 
+  prices <- reactive({
+    getSymbols(symbols(), src = 'yahoo',
+                       from = input$start_date_input,
+                       to = input$end_date_input,
+                       auto.assign = TRUE) |>
+      map(.f = ~ Ad(get(x = .))) |> 
+      reduce(.f = merge) |> 
+      `colnames<-`(value = symbols())
+  })
   
-} 
+  
+  MonthlyAdjustedReturns <- reactive({
+    to.monthly(
+      x = prices(),
+      drop.time = TRUE,
+      indexAt = 'lastof', 
+      OHLC = FALSE
+    ) |> 
+      Return.calculate(method = 'discrete') |> 
+      na.omit()
+  })
+  
+  optimizePortfolio <- eventReactive(input$optimize, {
+    data <- prices()
+    returns <- MonthlyAdjustedReturns()
+    portfolio <- portfolio.spec(assets = symbols())
+    
+    # Add box constraint
+    portfolio <- add.constraint(
+      portfolio = portfolio,
+      type = 'box',
+      min = input$box_constraint[1],
+      max = input$box_constraint[2]
+    )
+    
+    optimize_method <- switch(input$optimization_objective,
+                              "Maximize Sharpe Ratio" = 'ROI',
+                              "Minimize Volatility" = 'quadprog',
+                              "Maximize Return" = 'Rglpk')
+    
+    if(input$optimization_objective == 'Maximize Sharpe Ratio') {
+      portfolio <- add.objective(portfolio = portfolio, type = 'risk_adjusted_return', name = 'SharpeRatio')
+    } else if(input$optimization_objective == 'Minimize Volatility') {
+      portfolio <- add.objective(portfolio = portfolio, type = 'risk', name = 'StdDev')
+    } else if(input$optimization_objective == 'Maximize Return') {
+      portfolio <- add.objective(portfolio = portfolio, type = 'return', name = 'mean')
+    }
+    
+    optimize.portfolio(
+      R = returns,
+      portfolio = portfolio,
+      optimize_method = optimize_method
+    )
+    
+  })
+    
+  portfolio_weights <- reactive({
+    optimized_weights <- pluck(optimizePortfolio(), 'weights')
+    tibble(
+      asset = names(optimized_weights),
+      allocation = as.numeric(optimized_weights)
+    )
+  })
+  
+  
+  output$results <- renderTable({
+    portfolio_weights()
+    
+  })
+  
+  
+  output$piechart <- renderHighchart({
+    data <- portfolio_weights()
+    hchart(data, 'pie', hcaes(name = asset, y = allocation)) |> 
+      hc_title(text = 'Portfolio Allocation') |> 
+      hc_tooltip(pointFormat = "<b>{point.name}</b>: {point.percentage: .1f}%") |> 
+      hc_plotOptions(pie = list(
+        dataLabels = list(
+          enabled = TRUE,
+          format = "<b>{point.name}</b>: {point.percentage:.1f}%"
+        )
+      ))
+  })
+  
+  
+  # portfolio_returns <- Return.portfolio(R = returns, weights = optimized_weights)
 
-
-
-#     output$distPlot <- renderPlot({
-# 
-#         # generate bins based on input$bins from ui.R
-#         x    <- faithful[, 2]
-#         bins <- seq(min(x), max(x), length.out = input$bins + 1)
-# 
-#         # draw the histogram with the specified number of bins
-#         hist(x, breaks = bins, col = 'darkgray', border = 'white',
-#              xlab = 'Waiting time to next eruption (in mins)',
-#              main = 'Histogram of waiting times')
-# 
-#     })
-# 
-# }
+}

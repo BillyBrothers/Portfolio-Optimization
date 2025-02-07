@@ -1,4 +1,5 @@
 #install.packages("shinydashboard")
+library(plotly)
 library(shiny)
 library(shinydashboard)
 library(Rglpk)
