@@ -33,12 +33,12 @@ ui <- dashboardPage(
       tabItem(tabName = 'configuration',
               fluidRow(
                 box(title = 'Configuration', width = 12, status = 'primary',
-                    dateInput('start_date_input', 'Start Date'),
-                    dateInput('end_date_input', 'End Date'),
+                    dateInput('start_date_input', 'Start Date', value = "2007-02-28"),
+                    dateInput('end_date_input', 'End Date', value = "2025-02-28"),
                     selectInput('optimization_objective', 'Optimization Objective:', choices = c("Maximize Sharpe Ratio", "Minimize Volatility", "Maximize Return")),
-                    sliderInput('box_constraint', 'Box Constraint:', min = 0, max = 1,  value = c(.1, .6)),
+                    sliderInput('box_constraint', 'Box Constraint:', min = 0, max = 1, value = c(0, 1)),
                     lapply(1:10, function(i){
-                      textInput(paste0("asset_", i), label = paste0("Asset Ticker ", i), value = c('IXC', 'IXG', 'IXN', 'IXJ', 'IXP','RXI','EXI','MXI','KXI','JXI')[i])
+                      textInput(paste0("asset_", i), label = paste0("Asset Ticker ", i), value = c("AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA", "ORCL", "CRM", "ADBE")[i])
                     }),
                     actionButton('optimize', 'Optimize', icon = icon('cogs'), class = 'btn-primary')
                 )
@@ -49,7 +49,9 @@ ui <- dashboardPage(
               fluidRow(
                 box(title = 'Results', width = 12, status = 'primary',
                     tableOutput('results'),
-                    highchartOutput('piechart'))
+                    highchartOutput('piechart'),
+                    tableOutput('performance_summary'),
+                    highchartOutput('lineChart'))
                 
               ))
     )

@@ -42,6 +42,24 @@ library(widgetframe)
 *using exchanged traded funds to analyze sector performance*
 
 
+```{r}
+symbols <- c("^GSPC")
+
+spx <- getSymbols(
+  Symbols = symbols,
+  src = 'yahoo',
+  auto.assign = TRUE,
+  warnings = FALSE
+) |>
+  
+  # get() unpacks our financial price data (Open, High, Low, Close, Volume, Adjusted). Ad returns ONLY the daily adjusted price (accounts for any dividends paid, corporate actions, or adjustments that would effect the price of the stock. Map returns each individual stock data into a list. 
+  map(.f = ~Ad(get(x = .))) |> 
+  #reduce applies a function to each element of the list? 
+  reduce(.f = merge) |> 
+  # I needed to set the ticker symbol to the name of the columns. I found this nifty way of doing it since colnames(x=prices) <- value didn't work and I don't know why. Apparently this is prefix form. (Ex. AAPL.Adjusted is now AAPL)
+  `colnames<-` (value=symbols)
+spx
+```
 
 ```{r}
 symbols <- c('IXC', 'IXG', 'IXN', 'IXJ', 'IXP','RXI','EXI','MXI','KXI','JXI')
@@ -61,6 +79,9 @@ prices <- getSymbols(
   # I needed to set the ticker symbol to the name of the columns. I found this nifty way of doing it since colnames(x=prices) <- value didn't work and I don't know why. Apparently this is prefix form. (Ex. AAPL.Adjusted is now AAPL)
   `colnames<-` (value=symbols)
 prices
+```
+```{r}
+print(range(index(prices)))
 ```
 
 
@@ -113,18 +134,6 @@ hc_legend(enabled = TRUE)
      values_to = 'Log_Returns'
    )
 monthly_adjusted_log_returns_tibble
-```
-
-
-```{r}
- ggplot(
-   monthly_adjusted_log_returns_tibble, mapping = aes(x=Log_Returns) +
-     geom_histogram(
-       alpha = 0.5,
-       mapping = aes(fill= Asset)
-     ) +
-     ggtitle("Distributions of Monthly Log")
- )
 ```
 
 ```{r}
@@ -265,12 +274,6 @@ Minimum_Variance_Portfolio
 main_variance_portfolio_weights <- pluck(Minimum_Variance_Portfolio, 'weights')
 main_variance_portfolio_weights
 ```
-```{r}
-tibble(
-  asset = names(Minimum_Variance_Portfolio),
-  allocation = Minimum_Variance_Portfolio
-)
-```
 
 
 
@@ -292,10 +295,12 @@ Minimized_Portfolio_Returns <- Return.portfolio(
   `colnames<-`("Monthly_portfolio_returns")
 Minimized_Portfolio_Returns
 ```
-
-
-
 *creating Maximal Return expected Portfolio*
+
+
+```{r}
+cor(Minimized_Portfolio_Returns, spx_monthly_adjusted_returns)
+```
 
 
 
@@ -378,7 +383,7 @@ glue("Your maximal annualized expected return is {annualized_Return}")
 
 ```{r}
 # We are using the Return.portfolio() function from Performance Analytics to calculate the percentage returns per month. It's based on the weights for the asset and the assets return that month. 
-Return.portfolio(
+portfolio <- Return.portfolio(
   R = monthly_adjusted_returns,
   weights = main_expected_return_portfolio_weights,
   #aggregate monthly 
@@ -386,6 +391,11 @@ Return.portfolio(
   geometric = FALSE
 ) |> 
   `colnames<-`("Monthly_portfolio_returns")
+```
+
+```{r}
+cor(portfolio, spx_monthly_adjusted_returns)
+
 ```
 
 *Return the tangent portfolio*
@@ -462,8 +472,6 @@ main_tangent_portfolio_weights <- pluck(main_tangent_portfolio,
 main_tangent_portfolio_weights
 ```
 
-
-
 ```{r}
 tangent_portfolio_return <- Return.portfolio(
   R = monthly_adjusted_returns,
@@ -477,5 +485,59 @@ tangent_portfolio_return <- Return.portfolio(
 tangent_portfolio_return
 ```
 
+```{r}
+monthly_adjusted_returns_tibble <- tangent_portfolio_return |> 
+   tk_tbl() |> 
+   rename(date = index) |> 
+   pivot_longer(
+     -date,
+     names_to = 'Asset',
+     values_to = 'Returns'
+   ) |> 
+  select(-Asset)
+monthly_adjusted_returns_tibble
+```
 
+
+```{r}
+monthly_returns <- monthly_adjusted_returns_tibble
+dates <- monthly_adjusted_returns_tibble$date
+start_balance <-  5000
+cumulative_balance <- start_balance * cumprod(1+as.numeric(monthly_adjusted_returns_tibble$Returns))
+```
+
+
+```{r}
+data <- data.frame(
+  x = as.numeric(as.POSIXct(dates)) * 1000,
+  y = cumulative_balance
+)
+data
+```
+
+
+
+```{r}
+highchart(type = 'stock') |> 
+  hc_title(text = 'Portfolio Growth') |> 
+  hc_xAxis(type = 'dateime') |> 
+  hc_add_series(
+    name = 'Cumulative Dollar Amount',
+    data = list_parse2(data),
+    tooltip = list(
+      valueDecimals = 2,
+      valuePrefix = "$",
+      valueSuffix = "",
+      xDateFormat = "%b %Y"
+    )
+  )
+```
+
+```{r}
+print(range(index(monthly_adjusted_returns)))
+```
+
+```{r}
+
+```
 
