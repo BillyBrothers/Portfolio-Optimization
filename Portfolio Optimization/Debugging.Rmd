@@ -1,0 +1,344 @@
+```{r}
+library(plotly)
+library(shiny)
+library(shinydashboard)
+library(Rglpk)
+library(ROI.plugin.glpk)
+library(ROI)
+library(ROI.plugin.quadprog)
+library(tidyverse)
+library(quantmod)
+library(PerformanceAnalytics)
+library(PortfolioAnalytics)
+library(timetk)
+library(tibbletime)
+library(xts)
+library(zoo)
+library(tidyquant)
+library(glue)
+library(quadprog)
+library(rlang)
+library(webshot)
+library(knitr)
+library(purrr)
+library(highcharter)
+library(widgetframe)
+library(scales)
+library(DT)
+library(lubridate)
+library(dplyr)
+library(tidyr)
+library(reshape2)
+#install.packages("foreach")
+#install.packages("doParallel")
+library(foreach)
+library(doParallel)
+library(tibble)
+#install.packages("tseries")
+#install.packages("DEoptim")
+library(tseries)
+library(plotly)
+library(DEoptim)
+library(tseries)
+```
+
+```{r}
+start_date <- as.Date("2007-02-28")
+end_date <- as.Date("2025-02-28")
+symbols <- c("AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA", "ORCL", "CRM", "ADBE")
+```
+
+```{r}
+prices <- getSymbols(symbols, src = 'yahoo', from = start_date, to = end_date, auto.assign = TRUE, warnings = FALSE)
+prices
+```
+
+
+```{r}
+prices <- prices |> 
+  map(.f = ~Ad(get(x = .))) |> 
+  reduce(.f = merge) |> 
+  `colnames<-` (value=symbols)
+prices
+```
+
+
+```{r}
+returns <- to.monthly(
+x = prices,
+drop.time = TRUE,
+OHLC = FALSE
+ ) |> 
+#compute our log returns
+Return.calculate(
+method = 'discrete') |> 
+na.omit()
+returns
+```
+
+```{r}
+index(returns) <- as.Date(index(returns))
+```
+
+
+```{r}
+print("Structure of monthly_returns:")
+print(str(returns))
+print("First few rows of monthly_returns:")
+print(head(returns))
+```
+
+```{r}
+returns <- returns
+rf_monthly <- (1+0.05)^(1/12)-1
+assets <- colnames(returns)
+expected_returns <- apply(returns, 2, function(x) Return.annualized(x , geometric = FALSE))
+standard_deviations <- apply(returns, 2, function(x) {sd(x) * sqrt(12)})
+sharpe_ratios <- apply(returns, 2, function(x) {SharpeRatio(x, Rf = rf_monthly)[1]})
+min_weights <- rep(0, length(assets))
+max_weights <- rep(1, length(assets))
+
+efficient_frontier_assets <- data.frame(
+      Asset = assets,
+      `Expected Return` = expected_returns,
+      `Standard Deviation` = standard_deviations,
+      `Sharpe Ratio` = sharpe_ratios,
+      `Minimum Weight` = min_weights,
+      `Maximum Weight` = max_weights
+    )
+```
+
+
+
+```{r}
+computeEfficientFrontier <- function(returns, min_weights, max_weights, rebalance_on = "months") {
+    portfolio <- portfolio.spec(assets = colnames(returns))
+    portfolio <- add.constraint(portfolio, type = "box", min = min_weights, max = max_weights)
+    portfolio <- add.constraint(portfolio, type = "full_investment")
+    portfolio <- add.objective(portfolio, type = "return", name = "mean")
+    portfolio <- add.objective(portfolio, type = "risk", name = "StdDev")
+}
+```
+
+```{r}
+assets_table <- efficient_frontier_assets
+asset_names <- assets_table$Asset
+min_weights <- rep(0, length(asset_names))
+max_weights <- rep(1, length(asset_names))
+
+portfolio <- computeEfficientFrontier(returns, min_weights, max_weights)
+```
+
+
+
+```{r}
+cl <- makeCluster(detectCores() - 1)
+registerDoParallel(cl)
+
+efficient_frontier <- optimize.portfolio.rebalancing(
+      R = returns,
+      portfolio = portfolio,
+      optimize_method = "ROI",
+      rebalance_on = 'months',
+      training_period = NULL,
+      rolling_window = NULL
+)
+
+stopCluster(cl)
+```
+
+
+
+
+```{r}
+dates <- names(stats)
+means <- numeric(length(stats))
+std_devs <- numeric(length(stats))
+weights <- matrix(NA, nrow = length(stats), ncol = length(symbols))
+colnames(weights) <- symbols
+for (i in seq_along(stats)) {
+  means[i] <- stats[[i]]['mean']
+  std_devs[i] <- stats[[i]]['StdDev']
+  weights[i, ] <- stats[[i]][paste0("w.", symbols)]
+}
+
+efficient_frontier_portfolios <- data.frame(
+  Date = as.Date(dates),
+  Expected_Return = as.numeric(means),
+  StdDev = std_devs,
+  weights
+)
+```
+
+```{r}
+monthly_rf = (1+0.05)^(1/12) - 1 
+
+efficient_frontier_portfolios  <- tibble(efficient_frontier_portfolios) |> 
+  mutate(Excess_return = Expected_Return - monthly_rf) |>
+  mutate(SharpeRatio = Excess_return/StdDev)
+
+
+
+efficient_frontier_portfolios
+```
+
+
+```{r}
+fig <- plot_ly(efficient_frontier_portfolios, 
+               x = ~StdDev, 
+               y = ~Expected_Return, 
+               type = 'scatter', 
+               mode = 'markers',
+               text = ~paste('Expected Return:', Expected_Return, 
+                             '<br>Standard Deviation:', StdDev, 
+                             '<br>AAPL:', AAPL, 
+                             '<br>MSFT:', MSFT,
+                             '<br>NVDA:', NVDA,
+                             '<br>GOOGL:', GOOGL,
+                             '<br>AMZN:', AMZN,
+                             '<br>META:', META,
+                             '<br>TSLA:', TSLA,
+                             '<br>ORCL:', ORCL,
+                             '<br>CRM:', CRM,
+                             '<br>ABDE:', ADBE),
+               hoverinfo = 'text') |> 
+  layout(title = 'Efficient Frontier',
+         xaxis = list(title = 'Standard Deviation'),
+         yaxis = list(title = 'Expected Return'))
+
+# Display the plot
+fig
+```
+
+
+
+```{r}
+# Create the plot
+fig <- plot_ly(efficient_frontier_portfolios, 
+               x = ~StdDev, 
+               y = ~Expected_Return, 
+               type = 'scatter', 
+               mode = 'lines+markers',
+               text = ~paste('Expected Return:', Expected_Return, 
+                             '<br>Standard Deviation:', StdDev,
+                             '<br>AAPL:', AAPL, 
+                             '<br>MSFT:', MSFT,
+                             '<br>NVDA:', NVDA,
+                             '<br>GOOGL:', GOOGL,
+                             '<br>AMZN:', AMZN,
+                             '<br>META:', META,
+                             '<br>TSLA:', TSLA,
+                             '<br>ORCL:', ORCL,
+                             '<br>CRM:', CRM,
+                             '<br>ABDE:', ADBE),
+               hoverinfo = 'text') |> 
+  layout(title = 'Efficient Frontier',
+         xaxis = list(title = 'Standard Deviation'),
+         yaxis = list(title = 'Expected Return'))
+
+# Display the plot
+fig
+```
+
+```{r}
+
+cl <- makeCluster(detectCores() - 1)
+clusterEvalQ(cl, library(PortfolioAnalytics))
+clusterExport(cl, list("returns", "portfolio"))
+
+
+portfolio <- portfolio.spec(assets = colnames(returns))
+
+# Add relaxed constraints and objectives
+portfolio <- portfolio.spec(assets = colnames(returns))
+portfolio <- add.constraint(portfolio, type = "full_investment")
+portfolio <- add.constraint(portfolio, type = "box", min = 0, max = 1)
+portfolio <- add.objective(portfolio, type = "risk", name = "var")
+
+optimize_portfolio <- optimize.portfolio(returns, portfolio, optimize_method = "quadprog", trace = TRUE,  parallel = cl)
+
+stopCluster(cl)
+```
+
+
+
+```{r}
+optimize_portfolio
+```
+
+```{r}
+chart.Weights(optimize_portfolio)
+```
+
+```{r}
+chart.RiskReward(
+  optimize_portfolio,
+  chart.assets = TRUE
+)
+```
+
+
+
+
+```{r}
+efficient_frontier <- extractEfficientFrontier(
+  optimize_portfolio, 
+  match.col = "var",
+  n.portfolios = 100
+)
+```
+
+
+
+```{r}
+
+# Initialize an empty data frame to store portfolio details
+portfolio_df <- data.frame()
+
+# Loop through each portfolio and extract details
+for (i in 1:length(efficient_frontier)) {
+  portfolio <- efficient_frontier[[i]]
+  
+  # Print the contents of the portfolio for debugging
+  print(paste("Portfolio", i))
+  print(portfolio)
+  
+  # Ensure that weights are not NULL
+  if (!is.null(portfolio$weights)) {
+    weights <- as.matrix(portfolio$weights)
+    risk <- portfolio$StdDev
+    return <- portfolio$mean
+    
+    # Combine the details into a data frame row
+    portfolio_row <- data.frame(t(weights))
+    portfolio_row$risk <- risk
+    portfolio_row$return <- return
+    
+    # Bind the row to the data frame
+    portfolio_df <- rbind(portfolio_df, portfolio_row)
+  } else {
+    message("Skipping portfolio ", i, " due to NULL weights.")
+  }
+}
+
+# Print the data frame
+print(portfolio_df)
+```
+
+
+
+
+```{r}
+
+cl <- makeCluster(detectCores() - 1)
+
+
+chart.EfficientFrontier(
+  optimize_portfolio,
+  match.col = "StdDev"
+)
+
+
+stopCluster(cl)
+
+```

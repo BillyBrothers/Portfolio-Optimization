@@ -1,0 +1,392 @@
+```{r}
+library(plotly)
+library(shiny)
+library(shinydashboard)
+library(Rglpk)
+library(ROI.plugin.glpk)
+library(ROI)
+library(ROI.plugin.quadprog)
+library(tidyverse)
+library(quantmod)
+library(PerformanceAnalytics)
+library(PortfolioAnalytics)
+library(timetk)
+library(tibbletime)
+library(xts)
+library(zoo)
+library(tidyquant)
+library(glue)
+library(quadprog)
+library(rlang)
+library(webshot)
+library(knitr)
+library(purrr)
+library(highcharter)
+library(widgetframe)
+library(scales)
+library(DT)
+library(lubridate)
+library(dplyr)
+library(tidyr)
+library(reshape2)
+#install.packages("foreach")
+#install.packages("doParallel")
+library(foreach)
+library(doParallel)
+library(tibble)
+#install.packages("tseries")
+#install.packages("DEoptim")
+library(tseries)
+library(plotly)
+library(DEoptim)
+library(tseries)
+```
+
+
+```{r}
+start_date <- as.Date("2007-02-28")
+end_date <- as.Date("2025-02-28")
+symbols <- c("AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA", "ORCL", "CRM", "ADBE")
+```
+
+
+```{r}
+prices <- getSymbols(symbols, 
+                     src = 'yahoo', 
+                     from = start_date, 
+                     to = end_date, 
+                     auto.assign = TRUE, 
+                     warnings = FALSE) |>
+                    map(.f = ~Ad(get(x = .))) |> 
+                    reduce(.f = merge) |> 
+                    `colnames<-` (value=symbols)
+
+```
+
+
+```{r}
+individual_monthly_returns <- to.monthly(
+  x = prices,
+  drop.time = TRUE,
+  indexAt = "lastof",
+  OHLC = FALSE
+) |> 
+  Return.calculate(method = 'discrete') |> 
+  na.omit() |> 
+  as.data.frame()
+```
+
+```{r}
+individual_annualized_mean_returns <- individual_monthly_returns |> 
+  summarise(across(everything(), mean, na.rm = TRUE)) |>
+  mutate(across(everything(), ~ (. + 1)^12 - 1)) |>
+  pivot_longer(cols = everything(), names_to = "Symbols", values_to = "Annualized Return")
+individual_annualized_mean_returns
+```
+
+```{r}
+individual_annualized_standard_deviations <- individual_monthly_returns |> 
+  summarise(across(everything(), sd, na.rm = TRUE)) |>
+  mutate(across(everything(), ~ . * sqrt(12))) |> 
+  pivot_longer(cols = everything(), names_to = 'Symbols', values_to = 'Annual StdDev')
+individual_annualized_standard_deviations
+```
+```{r}
+assets_df <- inner_join(individual_annualized_mean_returns, individual_annualized_standard_deviations) |> 
+  filter(Symbols != "NVDA")
+assets_df
+```
+
+
+
+```{r}
+# create max risk adjusted return portfolio 
+portfolio <- portfolio.spec(assets = colnames(returns))
+
+portfolio <- portfolio.spec(assets = colnames(returns))
+portfolio <- add.constraint(portfolio, type = "full_investment")
+portfolio <- add.constraint(portfolio, type = "box", min = 0, max = 1)
+portfolio <- add.constraint(portfolio, type = 'long_only')
+portfolio <- add.objective(portfolio, type = "return", name = "mean")
+portfolio <- add.objective(portfolio, type = "risk", name = "var")
+
+
+risk_adjusted_optimize_portfolio <- optimize.portfolio(returns, portfolio, optimize_method = "ROI", maxSR = TRUE,  trace = TRUE)
+```
+
+```{r}
+risk_adjusted_optimize_portfolio
+```
+
+```{r}
+risk_free_rate <- 0.05
+annualized_risk_adjusted_return <- (1+risk_adjusted_optimize_portfolio$objective_measures$mean)^12 - 1
+annualized_risk_adjusted_standard_deviation <- (risk_adjusted_optimize_portfolio$objective_measures$StdDev) * sqrt(12)
+risk_adjusted_sharpe_ratio <- (annualized_risk_adjusted_arithmetic - risk_free_rate) / annualized_risk_adjusted_standard_deviation
+```
+
+
+
+
+```{r}
+risk_adjusted_weights <- extractWeights(risk_adjusted_optimize_portfolio, 'weights')
+```
+
+
+
+```{r}
+risk_adjusted_portfolio_returns <- Return.portfolio(R= returns,
+                     weights = pluck(risk_adjusted_optimize_portfolio, 'weights'),
+                     rebalance_on = "months",
+                     geometric = TRUE
+                     ) |> 
+      `colnames<-`('risk_adjusted_portfolio_returns')
+```
+
+
+
+```{r}
+annual_risk_adjusted_expected_return <- Return.annualized(risk_adjusted_portfolio_returns)
+
+annual_risk_adjusted_StdDev <- StdDev(risk_adjusted_portfolio_returns) * sqrt(12)
+```
+
+```{r}
+portfolio <- portfolio.spec(assets = colnames(returns))
+
+portfolio <- portfolio.spec(assets = colnames(returns))
+portfolio <- add.constraint(portfolio, type = "full_investment")
+portfolio <- add.constraint(portfolio, type = 'long_only')
+portfolio <- add.constraint(portfolio, type = "box", min = 0, max = 1)
+portfolio <- add.objective(portfolio, type = "return", name = "mean")
+
+max_return_optimize_portfolio <- optimize.portfolio(returns, portfolio, optimize_method = "Rglpk",  trace = TRUE)
+```
+
+```{r}
+maximal_weights <- extractWeights(max_return_optimize_portfolio, 'weights')
+maximal_weights
+```
+```{r}
+risk_free_rate <- 0.05
+annualized_max_return <- (1+max_return_optimize_portfolio$objective_measures$mean)^12 - 1
+```
+
+annualized_max_standard_deviation <- (max_return_optimize_portfolio$objective_measures$StdDev) * sqrt(12)
+risk_adjusted_sharpe_ratio <- (annualized_risk_adjusted_arithmetic - risk_free_rate) / annualized_risk_adjusted_standard_deviation
+
+
+```{r}
+max_return_portfolio_returns <- Return.portfolio(
+  returns,
+  pluck(max_return_optimize_portfolio, 'weights'),
+  rebalance_on = "months",
+  geometric = TRUE
+) |> 
+  `colnames<-`('max_return_portfolio_returns')
+```
+
+
+
+```{r}
+annual_max_expected_return <- Return.annualized(max_return_portfolio_returns)
+
+annual_max_return_StdDev <-
+  StdDev(max_return_portfolio_returns) * sqrt(12)
+```
+
+```{r}
+portfolio <- portfolio.spec(assets = colnames(returns))
+
+portfolio <- portfolio.spec(assets = colnames(returns))
+portfolio <- add.constraint(portfolio, type = "full_investment")
+portfolio <- add.constraint(portfolio, type = "box", min = 0, max = 1)
+portfolio <- add.objective(portfolio, type = "risk", name = "var")
+
+min_risk_optimize_portfolio <- optimize.portfolio(returns, portfolio, optimize_method = "quadprog",  trace = TRUE)
+```
+
+
+```{r}
+min_var_weights <- extractWeights(min_risk_optimize_portfolio, "weights")
+min_var_weights
+```
+
+```{r}
+risk_free_rate <- 0.05
+annualized_min_var_standard_deviation <- (min_risk_optimize_portfolio$objective_measures$StdDev) * sqrt(12)
+```
+
+
+
+```{r}
+min_risk_portfolio_returns <- Return.portfolio(
+  returns,
+  pluck(min_risk_optimize_portfolio, 'weights'),
+  rebalance_on = "months",
+  geometric = TRUE
+) |> 
+  `colnames<-`('min_risk_portfolio_returns')
+```
+
+
+```{r}
+annual_min_risk_expected_return <- Return.annualized(min_risk_portfolio_returns)
+
+annual_min_risk_StdDev <-
+  StdDev(min_risk_portfolio_returns) * sqrt(12)
+```
+
+
+```{r}
+efficient_frontier <- extractEfficientFrontier(
+  risk_adjusted_optimize_portfolio,
+  match.col = "StdDev",
+  n.portfolios = 100
+                         )
+```
+
+
+```{r}
+efficient_frontier$frontier
+```
+
+```{r}
+
+cl <- makeCluster(detectCores() - 1)
+
+mean_return <- efficient_frontier$frontier[, 1]
+std_dev <- efficient_frontier$frontier[, 2]
+weights <- efficient_frontier$frontier[, 4:13]
+
+n.portfolios <- 100
+
+annual_return <- (1 + mean_return) ^ 12 - 1
+annual_std_dev <- std_dev * sqrt(12)
+risk_free_rate <- 0.05
+sharpe_ratio <- (annual_return - risk_free_rate) / annual_std_dev
+
+weights_str <- apply(weights, 1, function(row) {
+  paste(names(row), ":", round(row, 2), collapse = "<br>")
+})
+
+data_list <- sapply(1:length(mean_return), function(i) {
+  list(x = std_dev[i], y = mean_return[i], weights = weights_str[i])
+})
+
+stopCluster(cl)
+```
+
+
+```{r}
+annual_min_risk_expected_return
+```
+
+```{r}
+optimal_sharpe <- risk_adjusted_sharpe_ratio
+cml_x <- c(0, max(annual_std_dev))
+cml_y <- risk_free_rate + optimal_sharpe * cml_x
+```
+
+
+
+
+```{r}
+# Create the plot using plotly
+plot_ly(
+  x = ~annual_std_dev,
+  y = ~annual_return,
+  type = 'scatter',
+  mode = 'markers+lines',
+  text = ~paste("Risk (StdDev):", round(annual_std_dev, 2), 
+                "<br>Return (Mean):", round(annual_return, 2),
+                "<br>Sharpe Ratio:", round(sharpe_ratio, 2),
+                "<br>Weights:<br>", weights_str),
+  hoverinfo = 'text',
+  marker = list(color = 'blue'),
+  name = 'Efficient Frontier'
+) |> 
+  # Add the optimal portfolio point
+  add_trace(
+    x = annualized_risk_adjusted_standard_deviation,
+    y = annualized_risk_adjusted_return,
+    type = 'scatter',
+    mode = 'markers',
+    marker = list(color = 'red', size = 10),
+    name = 'Optimal Portfolio',
+    text = paste("Risk (StdDev):", round(annualized_risk_adjusted_standard_deviation, 4), 
+                 "<br>Return (Mean):", round(annualized_risk_adjusted_return, 4),
+                 "<br>Sharpe Ratio:", round(risk_adjusted_sharpe_ratio, 2),
+                 "<br>Optimal Weights:<br>", paste(names(risk_adjusted_weights), ":", round(risk_adjusted_weights, 2), collapse = "<br>")),
+    hoverinfo = 'text'
+  ) %>%
+  # Add the maximal portfolio point
+  add_trace(
+    x = annual_max_return_StdDev,
+    y = annualized_max_return,
+    type = 'scatter',
+    mode = 'markers',
+    marker = list(color = 'green', size = 10),
+    name = 'Maximal Portfolio',
+    text = paste("Risk (StdDev):", round(annual_max_return_StdDev, 2), 
+                 "<br>Return (Mean):", round(annualized_max_return, 2),
+                 "<br>Maximal Weights:<br>", paste(names(maximal_weights), ":", round(maximal_weights, 2), collapse = "<br>")),
+    hoverinfo = 'text'
+  ) %>%
+  # Add the minimum variance portfolio point
+  add_trace(
+    x = annualized_min_var_standard_deviation,
+    y = 0.22,
+    type = 'scatter',
+    mode = 'markers',
+    marker = list(color = 'purple', size = 10),
+    name = 'Minimum Variance Portfolio',
+    text = paste("Risk (StdDev):", round(annualized_min_var_standard_deviation, 4), 
+                 "<br>Return (Mean):", round(0.22, 4),
+                 "<br>Minimum Variance Weights:<br>", paste(names(min_var_weights), ":", round(min_var_weights, 2), collapse = "<br>")),
+    hoverinfo = 'text'
+  )  |> 
+  add_trace(
+    x = cml_x,
+    y = cml_y,
+    type = 'scatter',
+    mode = 'lines',
+    line = list(color = 'green', dash = 'dash'),
+    name = 'Capital Market Line',
+    text = 'Capital Market Line (CML)',
+    hoverinfo = 'text'
+  ) |> 
+  
+  add_trace(
+    x = assets_df$`Annual StdDev`,
+    y = assets_df$`Annualized Return`,
+    type = 'scatter',
+    mode = 'markers',
+    marker = list(size = 8, color = 'orange'),
+    name = 'Inferior Portfolios',
+    text = ~paste("Asset:", assets_df$Symbols, 
+                  "<br>Risk (StdDev):", round(assets_df$`Annual StdDev`, 2), 
+                  "<br>Return (Mean):", round(assets_df$`Annualized Return`, 2)),
+    hoverinfo = 'text'
+  ) |> 
+  layout(
+    title = 'Annualized Efficient Frontier with Portfolios',
+    xaxis = list(
+      title = 'Risk (Portfolio Standard Deviation)',
+      tickformat = ".2%",  # Format as percentage with 2 decimal places
+      tickvals = seq(0, 0.8, by = 0.05)  # Custom tick values at intervals of 0.05
+    ),
+    yaxis = list(
+      title = 'Portfolio Expected Return',
+      tickformat = ".2%",  # Format as percentage with 2 decimal places
+      tickvals = seq(0, 0.6, by = 0.05)  # Custom tick values at intervals of 0.05
+    ),
+    hoverlabel = list(
+      bgcolor = "white",
+      bordercolor = "black",
+      font = list(color = "black")
+    )
+  )
+```
+
+

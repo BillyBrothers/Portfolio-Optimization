@@ -10,6 +10,9 @@
 # install.packages('widgetframe')
 #install.packages("quadprog")
 #install.packages("shinydashboard")
+library(plotly)
+library(shiny)
+library(shinydashboard)
 library(Rglpk)
 library(ROI.plugin.glpk)
 library(ROI)
@@ -21,7 +24,6 @@ library(PortfolioAnalytics)
 library(timetk)
 library(tibbletime)
 library(xts)
-library(zoo)
 library(tidyquant)
 library(glue)
 library(quadprog)
@@ -31,6 +33,12 @@ library(knitr)
 library(purrr)
 library(highcharter)
 library(widgetframe)
+library(scales)
+library(DT)
+library(lubridate)
+library(dplyr)
+library(tidyr)
+library(reshape2)
 ```
 
 
@@ -497,6 +505,11 @@ monthly_adjusted_returns_tibble <- tangent_portfolio_return |>
   select(-Asset)
 monthly_adjusted_returns_tibble
 ```
+```{r}
+monthly_adjusted_returns_tibble |> 
+  group_by(year = year(date)) |> 
+  summarize(annual_return = prod(1 + Returns) -1)
+```
 
 
 ```{r}
@@ -532,12 +545,66 @@ highchart(type = 'stock') |>
     )
   )
 ```
+```{r}
+monthly_adjusted_returns <- monthly_adjusted_returns |> 
+  na.omit()
+SharpeRatio(monthly_adjusted_returns, 2, Rf = 0.05/12)
+```
+
+
 
 ```{r}
-print(range(index(monthly_adjusted_returns)))
+rf_monthly <- (1+0.05)^(1/12)-1
+returns <- monthly_adjusted_returns
+assets <- colnames(returns)
+expected_returns <- apply(returns, 2 , Return.annualized)
+standard_deviation <- apply(returns, 2, sd)
+monthly_sharpe_ratios <- apply(returns, 2, function(x) SharpeRatio(x, Rf = rf_monthly)[1])
+annual_sharpe_ratio <- monthly_sharpe_ratios * sqrt(12)
+annual_sharpe_ratio
+
+```
+
+
+
+```{r}
+cor_matrix <- cor(monthly_adjusted_returns)
+cor_matrix
 ```
 
 ```{r}
+cor_df <- melt(cor_matrix)
+cor_df
+```
+
+```{r}
+ggplot(data = cor_df, aes(x=Var1, y=Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", high = 'red', mid = 'white',
+                       midpoint = 0, limit = c(-1, 1), space = 'Lab',
+                       name = 'Correlation') +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust =1,
+                                   size = 12, hjust =1)) +
+  coord_fixed()
+```
+```{r}
 
 ```
+
+
+```{r}
+cor_matrix <- cor(monthly_adjusted_returns)
+
+# Create a heat map using highcharter
+hchart(cor_matrix, 
+       type = "heatmap", 
+       hcaes(x = colnames(cor_matrix), y = colnames(cor_matrix), value = cor_matrix)) %>%
+  hc_colorAxis(minColor = "blue", maxColor = "red") %>%
+  hc_tooltip(pointFormat = "{point.x} vs {point.y}: {point.value:.2f}") %>%
+  hc_plotOptions(heatmap = list(dataLabels = list(enabled = FALSE))) %>%
+  hc_xAxis(labels = list(enabled = FALSE)) %>%
+  hc_yAxis(labels = list(enabled = FALSE))
+```
+
 
