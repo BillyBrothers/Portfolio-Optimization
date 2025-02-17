@@ -6,15 +6,15 @@ I, like a lot of people, am interested in money and wanted to figure out how to 
 
 ## Data
 - Apple Inc, “AAPL”
-- "Microsoft Corp, “MSFT"
--  NVIDIA Corp, "NVDA" 
+- Microsoft Corp, “MSFT"
+- NVIDIA Corp, "NVDA" 
 - Alphabet Inc, "GOOGL" 
-- Amazon.com Inc "AMZN" 
-- META Platforms Inc "META" 
-- Tesla Inc "TSLA" 
+- Amazon.com Inc, "AMZN" 
+- META Platforms Inc, "META" 
+- Tesla Inc, "TSLA" 
 - Oracle Corp, "ORCL, 
 - Salesforce Inc, "CRM" 
-- Adobe Inc "ADBE" 
+- Adobe Inc, "ADBE" 
 
 
 ## Data Info
@@ -32,7 +32,7 @@ Tidy Quant
 
 ## Data Question
 
-**As a risk averse investor, can I discover the the best way to maximize returns and minimize risk with fast growing tech stocks**
+**As a risk averse investor, can I discover the the best way to maximize returns and minimize risk?**
 
 ## Data Importation
 
@@ -47,23 +47,23 @@ Tidy Quant
 Mean-Variance Modern Portfolio Theory (MPT) aims to maximize the return of a portfolio for a given level of risk, or equivalently, minimize the risk for a given level of expected return. The formula used to achieve this is based on optimizing the weights of the assets in the portfolio.
 
 ## Optimal Weights for a nth-asset portfolio (Minimum Variance)
-Our optimization objective is minimization: 
+Our optimization objective is Minimization: 
 
 $$
 Minimize (\sigma^2 = \vec{w}^\top \Sigma \vec{w})
 $$
 
-Full Investment constraint (total proportion of assets in portfolio must sum to 1. Ensures properly diversified and balanced portfolio. No Short selling (negative positions) or leveraging (positions larger than 1) allowed.
+Full Investment constraint (total proportion of assets in portfolio must sum to 1. No Short selling (negative positions) or leveraging (positions larger than 1) allowed.
 
 $$
 \text{subject to:} \quad \sum_{i=1}^{n} w_i = 1
 $$
 
-Box Constraint(limits weights of each assets within specified range between 0 to 1. Prevents overallocation in anyone asset -- ensures diversification:
+Box Constraint(limits weights of each assets within specified range between 0 to 1. Prevents overallocation in anyone asset.
 
 $$
 \text{subject to:} \quad L_i \leq w_i \leq U_i \quad \text{for all } i
-$
+$$
 
 Quadratic Problem with Linear Constraints:
 * Constraints are linear equations.
@@ -75,31 +75,31 @@ Quadratic Programming (QP Solver):
 
 
 Objective:
-* Create a portfolio with the highest possible variance (risk) for a given level of return.
+* Create a portfolio with the lowest possible variance (risk) for a given level of return.
 * Add Constraints (Box Constraint, Full Investment)
-* Add objective: Maximization
-* Optimize: Computes optimal weights for maximal expected return
+* Add objective: Minimization
+* Optimize: Computes optimal weights for minimal possible variance
 * Weighted Returns: multiply the previously computed monthly returns by optimal weights
-* Outcome: Optimal weights for minimizing risk (global variance portfolio)
-
+* Outcome: Optimal weights for minimizing risk given a level of return (global variance portfolio)
 
 ## Optimal Weights for a nth-asset portfolio (Maximization Expected Return)
-Our optimization objective is maximization: 
+Our optimization objective is Maximization: 
 
 $$
 Maximize: Maximize (\vec{\mu}^\top \vec{w})
 $$
 
-Full Investment constraint
+Full Investment Constraint:
 
 $$
 \text{subject to:} \quad \sum_{i=1}^{n} w_i = 1
 $$
 
-Box Constraint
+Box Constraint:
+
 $$
 \text{subject to:} \quad L_i \leq w_i \leq U_i \quad \text{for all } i
-$
+$$
 
 
  Linear Problem with Linear Constraints:
@@ -117,9 +117,11 @@ Objective:
 * Add objective: Maximization
 * Optimize: Computes optimal weights for maximal possible expected return
 * Weighted Returns: multiply the previously computed monthly returns by the optimal weights
+* Outcome: Optimal weights for maximizing expected return given a level of risk (global variance portfolio)
 
 
-# Opitmal Weights for a nth-asset portfolio (Maximizing Risk Adjusted return)
+
+# Optimal Weights for a nth-asset portfolio (Maximizing Risk Adjusted return)
 Our optimization objective is Maximizing our Risk Adjusted Return (Sharpe Ratio): 
 
 
@@ -128,34 +130,37 @@ $$
 $$
 
 
-Full Investment constraint
+Full Investment Constraint:
 
 $$
 \text{subject to:} \quad \sum_{i=1}^{n} w_i = 1
 $$
 
-Box Constraint
+Box Constraint:
+
 $$
 \text{subject to:} \quad L_i \leq w_i \leq U_i \quad \text{for all } i
-$
+$$
 
 
-Both linear and Quadratic components. The Sharpe Ratio itself is a 
-* Linear function in the numerator (expected return minus risk-free rate) and a
+Both linear and Quadratic components.
+* Linear function in the numerator (expected return minus risk-free rate)
 * Quadratic function in the denominator (standard deviation of the portfolio, which depends on the covariance matrix of asset returns).
 
 NonLinear Programming Solver (NLP Solver):
-* Since we are maximizing a linear function and mininmzing 
+* Since we are Maximizing a linear function and Minimizing a quadratic function 
 * $${\color{red} PortfolioAnalytics} $$: package implements $${\color{red} ROI.plugin.nloptr} $$ to solve linear programming problem.
 
 
 Objective:
-* Create a portfolio with the highest possible return for a given level of risk.
+* Create a portfolio with the maximal Risk Adjusted Return
 * Add Constraints (Box Constraint, Full Investment)
 * Add objective: Maximization
-* Add Objective: Minization
-* Optimize: Computes optimal weights for maximal possible risk adjusted expected return 
+* Add Objective: Minimization
+* Optimize: Computes optimal weights for maximal possible Risk Adjusted Expected Return 
 * Weighted Returns: multiply the previously computed monthly returns by the optimal weights
+* Outcome: Optimal weights for maximizing Risk Adjusted Return
+
 
 
 
