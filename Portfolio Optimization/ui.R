@@ -17,7 +17,7 @@ ui <- dashboardPage(
                        box(title = 'Introduction', width = 12, status = 'primary',
                            p("Welcome to my Portfolio Optimization Dashboard. My app
                              optimizes your portfolio based on a given list of assets using
-                             the Mean Variance optimization approach."),
+                             the Mean Variance optimization approach. I've preloaded 10 popular tech stocks."),
                            tags$ul(
                              tags$li("Mean Variance - Constructs investment portfolio that offers
                                    best possible expected return for a given level of risk -- chosen

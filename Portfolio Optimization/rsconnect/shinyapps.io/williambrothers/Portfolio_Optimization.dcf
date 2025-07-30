@@ -1,0 +1,13 @@
+name: Portfolio_Optimization
+title: Portfolio_Optimization
+username: williambrothers
+account: williambrothers
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 14207306
+bundleId: 10700620
+url: https://williambrothers.shinyapps.io/Portfolio_Optimization/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: Debugging.Rmd|Debugging2.Rmd|Nasdaq_100_wrangling.Rmd|Portfolio_Optimization_workbook.Rmd|README.md|sample_returns.csv

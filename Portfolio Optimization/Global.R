@@ -1,5 +1,4 @@
-#install.packages("shinydashboard")
-#install.packages("DEoptim")
+
 library(plotly)
 library(shiny)
 library(shinydashboard)
@@ -30,15 +29,10 @@ library(lubridate)
 library(dplyr)
 library(tidyr)
 library(reshape2)
-#install.packages("foreach")
-#install.packages("doParallel")
 library(foreach)
 library(doParallel)
 library(tibble)
-#install.packages("tseries")
-#install.packages("DEoptim")
-library(tseries)
-library(plotly)
 library(DEoptim)
 library(tseries)
+
 

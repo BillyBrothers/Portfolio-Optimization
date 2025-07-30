@@ -527,7 +527,7 @@ server <- function(input, output) {
   
   annualized_min_var_standard_deviation <- reactive({
     min_risk_portfolio <- min_risk_portfolio()
-    annualized_min_var_standard_deviation <- (min_risk_optimize_portfolio$objective_measures$StdDev) * sqrt(12)
+    annualized_min_var_standard_deviation <- (min_risk_portfolio$objective_measures$StdDev) * sqrt(12)
     annualized_min_var_standard_deviation
   })
   
@@ -613,7 +613,7 @@ server <- function(input, output) {
     frontier <- efficient_frontier()
     
     
-    cl <- makeCluster(detectCores() - 1)
+    #cl <- makeCluster(detectCores() - 1)
     
     ef_monthly_mean_return <- frontier$frontier[, 1]
     ef_monthly_std_dev <- frontier$frontier[, 2]
@@ -638,7 +638,7 @@ server <- function(input, output) {
       
     })
     
-    stopCluster(cl)
+    #stopCluster(cl)
     
     cml_x <- c(0, max(ef_annual_std_dev))
     cml_y <- risk_free_rate + risk_adjusted_sharpe_ratio * cml_x
@@ -685,7 +685,7 @@ server <- function(input, output) {
                          "<br>Maximal Weights:<br>", paste(names(maximal_weights), ":", round(maximal_weights, 2), collapse = "<br>")),
             hoverinfo = 'text'
           ) %>%
-          # Add the minimum variance portfolio point
+          
           add_trace(
             x = annualized_min_var_standard_deviation,
             y = 0.22,
